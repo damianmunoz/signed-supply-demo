@@ -5,9 +5,9 @@ on:
     branches: [ main ]
 
 permissions:
-  id-token: write      # OIDC for Cosign
-  contents: read       # To checkout code
-  packages: write      # To push to GHCR
+  id-token: write      # Needed for keyless OIDC signing
+  contents: read       # Needed to clone repo
+  packages: write      # Needed to push to GHCR
 
 jobs:
   build-sign:
@@ -23,7 +23,7 @@ jobs:
     - name: Log in to GHCR
       run: echo "${{ secrets.GHRC_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-    - name: Build and push image
+    - name: Build and push Docker image
       run: |
         docker build -t ghcr.io/${{ github.repository }}:latest .
         docker push ghcr.io/${{ github.repository }}:latest
@@ -37,20 +37,23 @@ jobs:
         DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/${{ github.repository }}:latest)
         echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
 
-    - name: Sign image with Cosign (keyless)
+    - name: Sign image with Cosign (keyless, non-interactive)
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign sign "${{ steps.digest.outputs.digest }}"
+        cosign sign --yes "${{ steps.digest.outputs.digest }}"
 
     - name: Install Syft
       uses: anchore/sbom-action/download-syft@v0.14.3
 
-    - name: Generate SBOM
+    - name: Generate SBOM (in SPDX JSON)
       run: syft dir:. -o spdx-json > sbom.json
 
     - name: Sign SBOM file
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign sign-blob --output-signature sbom.sig --output-certificate sbom.crt sbom.json
+        cosign sign-blob --yes \
+          --output-signature sbom.sig \
+          --output-certificate sbom.crt \
+          sbom.json
