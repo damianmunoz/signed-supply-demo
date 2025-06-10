@@ -34,10 +34,11 @@ jobs:
     - name: Keyless sign Docker image
       env:
         COSIGN_EXPERIMENTAL: 1
-      run: cosign sign --keyless ghcr.io/${{ github.repository }}:latest
+      run: cosign sign ghcr.io/${{ github.repository }}:latest
 
     - name: Keyless sign SBOM
       env:
         COSIGN_EXPERIMENTAL: 1
       run: |
-        cosign sign-blob --keyless --output-signature sbom.sig --output-certificate sbom.crt sbom.json
+        cosign sign-blob --output-signature sbom.sig --output-certificate sbom.crt sbom.json
+
