@@ -63,6 +63,7 @@ jobs:
         COSIGN_EXPERIMENTAL: "1"
       run: |
         cosign attest \
+          --yes \
           --predicate attestation.json \
           --type custom \
           ${{ steps.digest.outputs.digest }}
