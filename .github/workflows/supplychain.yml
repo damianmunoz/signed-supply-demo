@@ -57,3 +57,13 @@ jobs:
           --output-signature sbom.sig \
           --output-certificate sbom.crt \
           sbom.json
+
+    - name: Generate Attestation
+      env:
+        COSIGN_EXPERIMENTAL: "1"
+      run: |
+        cosign attest \
+          --predicate attestation.json \
+          --type custom \
+          ${{ steps.digest.outputs.digest }}
+
